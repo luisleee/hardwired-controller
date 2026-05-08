@@ -8,7 +8,9 @@
 //  LEDR[8]   = zero flag
 //  LEDR[9]   = carry-out / borrow flag
 module top (
-    input  logic        CLOCK_50,
+    /* verilator lint_off UNUSEDSIGNAL */
+    input  logic        CLOCK_50,   // reserved for future CPU clock
+    /* verilator lint_on  UNUSEDSIGNAL */
     input  logic [9:0]  SW,
     output logic [9:0]  LEDR
 );
@@ -29,9 +31,5 @@ assign LEDR[7:0] = result;
 assign LEDR[8]   = zero;
 assign LEDR[9]   = carry_out;
 
-// CLOCK_50 is declared but unused — it will be here once the CPU is wired in.
-/* verilator lint_off UNUSED */
-logic _unused_clk = CLOCK_50;
-/* verilator lint_on  UNUSED */
 
 endmodule
