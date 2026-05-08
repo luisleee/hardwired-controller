@@ -1,8 +1,8 @@
 name: Build FPGA Bitstream
 
+# Quartus image is pulled from GHCR (GitHub's own CDN, same datacenter as
+# the runner) — no save/load cache needed.
 # Image source: https://github.com/raetro/sdk-docker-fpga
-# Using "docker run" instead of "container:" because the old glibc inside
-# raetro/quartus:21.1 is incompatible with Node.js 20 (actions runner).
 
 on:
   push:
@@ -20,31 +20,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Cache the Docker image as a tar so subsequent runs skip the Hub pull.
-      # First run: pull (~5-8 GB) + save → cache. Later runs: load from cache.
-      - name: Cache Quartus Docker image
-        id: docker-cache
-        uses: actions/cache@v4
-        with:
-          path: /tmp/quartus-docker.tar
-          key: docker-raetro-quartus-21.1
-
-      - name: Pull and save image
-        if: steps.docker-cache.outputs.cache-hit != 'true'
-        run: |
-          docker pull raetro/quartus:21.1
-          docker save raetro/quartus:21.1 -o /tmp/quartus-docker.tar
-
-      - name: Load image from cache
-        if: steps.docker-cache.outputs.cache-hit == 'true'
-        run: docker load -i /tmp/quartus-docker.tar
-
       - name: Run compilation flow
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/build" \
             -w /build \
-            raetro/quartus:21.1 \
+            ghcr.io/raetro/quartus:21.1 \
             quartus_sh --flow compile fpga/project.qpf
 
       - name: Show utilisation summary
