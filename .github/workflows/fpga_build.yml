@@ -1,9 +1,10 @@
 name: Build FPGA Bitstream
 
+# raetro/quartus:21.1 is based on old Ubuntu (glibc 2.23).
+# GitHub Actions Node.js 20 runner requires glibc 2.27, so using
+# "container:" breaks checkout/upload.  Fix: run on the standard
+# ubuntu-latest host and invoke Quartus via "docker run" instead.
 # Image source: https://github.com/raetro/sdk-docker-fpga
-# Quartus Prime Lite 21.1 with MAX10 device support is pre-installed.
-# License: Quartus tools are subject to Intel's FPGA Program License
-#          Subscription Agreement (free for Lite edition).
 
 on:
   push:
@@ -16,18 +17,25 @@ on:
 jobs:
   synthesis:
     runs-on: ubuntu-latest
-    container: raetro/quartus:21.1
 
     steps:
+      # Node.js 20 actions run fine on the host (modern glibc).
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run compilation flow
         run: |
-          quartus_sh --flow compile fpga/project.qpf 2>&1 | tee quartus_build.log
-          echo ""
-          echo "── Logic utilisation ──"
-          grep -A 6 "Logic utilization" fpga/output_files/project.fit.rpt || true
+          docker run --rm \
+            -v "${{ github.workspace }}:/build" \
+            -w /build \
+            raetro/quartus:21.1 \
+            quartus_sh --flow compile fpga/project.qpf
+
+      - name: Show utilisation summary
+        if: always()
+        run: |
+          grep -A 6 "Logic utilization" \
+            fpga/output_files/project.fit.rpt || true
 
       - name: Upload artifacts
         if: always()
@@ -41,4 +49,3 @@ jobs:
             fpga/output_files/*.map.rpt
             fpga/output_files/*.fit.rpt
             fpga/output_files/*.sta.rpt
-            quartus_build.log
