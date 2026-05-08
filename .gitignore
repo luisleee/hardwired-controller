@@ -1,0 +1,41 @@
+# ─── Quartus generated output ────────────────────────────────────────────────
+# Synthesis / fit / assembly outputs (binaries are CI artifacts, not source)
+output_files/
+# Incremental compilation databases (large, fully reproducible)
+db/
+incremental_db/
+# Workspace, lock, and backup files
+*.qws
+*.bak
+*.qdf.bak
+# IP and platform-designer caches
+ip_catalog_cache/
+qdb/
+# Temporary greybox / black-box directories
+greybox_tmp/
+# ModelSim / Questa work library
+work/
+# Qsys / Platform Designer generated files
+*.sopcinfo
+*.qip
+*.cmp
+hps_isw_handoff/
+
+# ─── Simulation artifacts ─────────────────────────────────────────────────────
+*.vcd
+*.vvp
+# Verilator build output
+obj_dir/
+build/
+
+# ─── Editor & OS ──────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml

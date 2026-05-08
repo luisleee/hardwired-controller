@@ -1,0 +1,53 @@
+name: Build FPGA Bitstream
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Uses the raetro/quartus Docker image which bundles Quartus Prime Lite 21.1
+# with MAX10 device support — no installer download needed.
+# Image source: https://github.com/raetro/sdk-docker-fpga
+# License note: Quartus tools inside the image are subject to Intel's FPGA
+#               Program License Subscription Agreement (free for Lite edition).
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: raetro/quartus:21.1
+
+    steps:
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+
+      # ── Sanity-check Quartus ─────────────────────────────────────────────
+      - name: Quartus version
+        run: |
+          export PATH="/opt/intelFPGA/quartus/bin:$PATH"
+          quartus_sh --version
+
+      # ── Full synthesis → place-and-route → assemble ─────────────────────
+      - name: Compile
+        run: |
+          export PATH="/opt/intelFPGA/quartus/bin:$PATH"
+          cd fpga
+          quartus_sh --flow compile project.qpf 2>&1 | tee ../quartus_build.log
+          echo ""
+          echo "── Logic utilisation ──────────────────────────────────────"
+          grep -A 6 "Logic utilization" output_files/project.fit.rpt || true
+
+      # ── Upload bitstream + reports as a downloadable artifact ───────────
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitstream-${{ github.sha }}
+          retention-days: 30
+          path: |
+            fpga/output_files/*.sof
+            fpga/output_files/*.pof
+            fpga/output_files/*.map.rpt
+            fpga/output_files/*.fit.rpt
+            fpga/output_files/*.sta.rpt
+            quartus_build.log
