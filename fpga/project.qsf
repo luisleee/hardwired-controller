@@ -24,7 +24,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/alu.sv
 set_global_assignment -name SDC_FILE           constraints.sdc
 
 # ---- MAX10 internal flash (generates .pof for non-volatile programming) ---
-set_global_assignment -name INTERNAL_FLASH_UPDATE_MODE "SINGLE IMAGE WITHOUT ERAM"
+set_global_assignment -name INTERNAL_FLASH_UPDATE_MODE "Single Image"
 set_global_assignment -name GENERATE_POF_FILE ON
 
 # ---- Misc -----------------------------------------------------------------
