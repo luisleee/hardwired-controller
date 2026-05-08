@@ -1,10 +1,8 @@
 name: Build FPGA Bitstream
 
-# raetro/quartus:21.1 is based on old Ubuntu (glibc 2.23).
-# GitHub Actions Node.js 20 runner requires glibc 2.27, so using
-# "container:" breaks checkout/upload.  Fix: run on the standard
-# ubuntu-latest host and invoke Quartus via "docker run" instead.
 # Image source: https://github.com/raetro/sdk-docker-fpga
+# Using "docker run" instead of "container:" because the old glibc inside
+# raetro/quartus:21.1 is incompatible with Node.js 20 (actions runner).
 
 on:
   push:
@@ -19,9 +17,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Node.js 20 actions run fine on the host (modern glibc).
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # Cache the Docker image as a tar so subsequent runs skip the Hub pull.
+      # First run: pull (~5-8 GB) + save → cache. Later runs: load from cache.
+      - name: Cache Quartus Docker image
+        id: docker-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/quartus-docker.tar
+          key: docker-raetro-quartus-21.1
+
+      - name: Pull and save image
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          docker pull raetro/quartus:21.1
+          docker save raetro/quartus:21.1 -o /tmp/quartus-docker.tar
+
+      - name: Load image from cache
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: docker load -i /tmp/quartus-docker.tar
 
       - name: Run compilation flow
         run: |
@@ -33,9 +49,7 @@ jobs:
 
       - name: Show utilisation summary
         if: always()
-        run: |
-          grep -A 6 "Logic utilization" \
-            fpga/output_files/project.fit.rpt || true
+        run: grep -A 6 "Logic utilization" fpga/output_files/project.fit.rpt || true
 
       - name: Upload artifacts
         if: always()
