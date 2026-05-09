@@ -2,6 +2,7 @@ name: Build FPGA Bitstream
 
 # Quartus image is pulled from GHCR (GitHub's own CDN, same datacenter as
 # the runner) — no save/load cache needed.
+# MAX7000/EPM7128 support ends at Quartus 13.1, so CI uses that image.
 # Image source: https://github.com/raetro/sdk-docker-fpga
 
 on:
@@ -25,7 +26,7 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}:/build" \
             -w /build \
-            ghcr.io/raetro/quartus:21.1 \
+            ghcr.io/raetro/quartus:13.1 \
             quartus_sh --flow compile fpga/project.qpf
 
       - name: Show utilisation summary

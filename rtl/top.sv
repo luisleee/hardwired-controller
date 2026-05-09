@@ -1,22 +1,23 @@
-// Top-level wrapper for DE10-Lite (device: 10M50DAF484C7G)
-// Pin assignments are in fpga/project.qsf — change them to match your board.
+// Top-level wrapper for MAX EPM7128 CPLD.
 //
-//  SW[9:7]   = ALU op (3 bits → 8 operations)
-//  SW[6:0]   = operand A (7 bits; A[7] is tied to 0)
-//  B         = hardcoded 8'h12 (18 decimal)
-//  LEDR[7:0] = result
-//  LEDR[8]   = zero flag
-//  LEDR[9]   = carry-out / borrow flag
+// Pin locations live in fpga/project.qsf.
+// Replace the placeholder PIN_* assignments there with the actual package pins
+// from your board or schematic.
+//
+//  SW[9:7]  = ALU op (3 bits → 8 operations)
+//  SW[6:0]  = operand A (7 bits; A[7] is tied to 0)
+//  B        = hardcoded 8'h12
+//  LED[7:0] = result
+//  LED[8]   = zero flag
+//  LED[9]   = carry-out / borrow flag
 module top (
-    /* verilator lint_off UNUSEDSIGNAL */
-    input  logic        CLOCK_50,   // reserved for future CPU clock
-    /* verilator lint_on  UNUSEDSIGNAL */
-    input  logic [9:0]  SW,
-    output logic [9:0]  LEDR
+    input  logic [9:0] SW,
+    output logic [9:0] LED
 );
 
 logic [7:0] result;
-logic       zero, carry_out;
+logic       zero;
+logic       carry_out;
 
 alu u_alu (
     .a        ({1'b0, SW[6:0]}),
@@ -27,9 +28,8 @@ alu u_alu (
     .carry_out(carry_out)
 );
 
-assign LEDR[7:0] = result;
-assign LEDR[8]   = zero;
-assign LEDR[9]   = carry_out;
-
+assign LED[7:0] = result;
+assign LED[8]   = zero;
+assign LED[9]   = carry_out;
 
 endmodule
