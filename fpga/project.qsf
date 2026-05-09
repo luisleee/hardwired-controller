@@ -10,7 +10,7 @@
 # =============================================================================
 
 # ---- Device ---------------------------------------------------------------
-set_global_assignment -name FAMILY "MAX 7000S"
+set_global_assignment -name FAMILY "MAX7000S"
 set_global_assignment -name DEVICE EPM7128SLC84-15
 
 # ---- Project --------------------------------------------------------------
