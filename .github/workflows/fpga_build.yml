@@ -1,8 +1,8 @@
 name: Build FPGA Bitstream
 
-# Build a Quartus 13.0 image with MAX7000 support, then use it for synthesis.
-# The Dockerfile fetches the installer from Intel CDN and adds the repo-local
-# MAX support qdz.
+# Pull a prebuilt Quartus 13.0 + MAX7000 image from GHCR and use it for
+# synthesis. Publish that image from the sibling repo ../quartus13-max7000.
+# Update the image name below after you create/publish that repo.
 
 on:
   push:
@@ -20,20 +20,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Quartus image with MAX7000 support
-        run: |
-          docker build \
-            -t local/quartus13-max7000:latest \
-            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --build-arg BUILD_VERSION="13.0-max7000" \
-            docker/quartus13-max7000
-
       - name: Run compilation flow
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/build" \
             -w /build \
-            local/quartus13-max7000:latest \
+            ghcr.io/luisleee/quartus13-max7000:latest \
             quartus_sh --flow compile fpga/project.qpf
 
       - name: Show utilisation summary
