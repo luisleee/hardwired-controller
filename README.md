@@ -1,16 +1,16 @@
 # hardwired
 
-一个用 SystemVerilog 编写、面向 **Altera MAX7000 / EPM7128SLC84-15** 的小型硬布线控制实验工程。
+一个用 SystemVerilog 编写、面向 **Altera MAX7000 / EPM7128SLC84-15** 的小型硬布线控制实验工程（CPLD）。
 
 目前仓库包含：
 - 本地开源仿真流程（Icarus Verilog / Verilator / GTKWave）
-- Quartus 13.0 云端综合流程（GitHub Actions）
+- Quartus 13.0 云端综合流程（GitHub Actions，用于 CPLD 构建）
 - CI 产出 `.sof` / `.pof` / `.svf`，其中 `.svf` 可直接用于 OpenOCD
 
 ## 目录结构
 
 ```text
-fpga/   Quartus 工程与引脚约束
+cpld/   Quartus CPLD 工程与引脚约束
 rtl/    SystemVerilog 源码
 sim/    本地仿真 testbench 与 Makefile
 ```
@@ -76,12 +76,12 @@ make lint
 make clean
 ```
 
-## GitHub Actions 综合
+## GitHub Actions CPLD 综合
 
 推送到 GitHub 后，workflow 会自动：
 
 1. 拉取 `ghcr.io/luisleee/quartus13-max7000:latest`
-2. 运行 `quartus_sh --flow compile fpga/project.qpf`
+2. 运行 `quartus_sh --flow compile cpld/project.qpf`
 3. 额外生成 OpenOCD 可用的 `.svf`
 4. 上传 artifact
 
@@ -97,7 +97,7 @@ make clean
 
 CI 会生成：
 
-- `fpga/output_files/project.svf`
+- `cpld/output_files/project.svf`
 
 它可以作为 OpenOCD 的输入文件使用。
 
@@ -109,7 +109,7 @@ openocd -f interface/usb-blaster.cfg -c "init" -c "svf project.svf" -c "shutdown
 
 当前引脚定义在：
 
-- `fpga/project.qsf`
+- `cpld/project.qsf`
 
 顶层端口定义在：
 

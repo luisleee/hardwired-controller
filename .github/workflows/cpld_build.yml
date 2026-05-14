@@ -1,4 +1,4 @@
-name: Build FPGA Bitstream
+name: Build CPLD Bitstream
 
 # Pull a prebuilt Quartus 13.0 + MAX7000 image from GHCR and use it for
 # synthesis. Publish that image from the sibling repo ../quartus13-max7000.
@@ -28,12 +28,22 @@ jobs:
             ghcr.io/luisleee/quartus13-max7000:latest \
             bash -lc '
               set -e
-              quartus_sh --flow compile fpga/project.qpf
 
-              if [ -f fpga/output_files/project.pof ]; then
-                quartus_cpf -c fpga/output_files/project.pof fpga/output_files/project.svf
-              elif [ -f fpga/output_files/project.sof ]; then
-                quartus_cpf -c fpga/output_files/project.sof fpga/output_files/project.svf
+              if [ -d /opt/intelFPGA/13.0sp1/quartus/bin ]; then
+                export PATH=/opt/intelFPGA/13.0sp1/quartus/bin:$PATH
+              elif [ -d /opt/altera/13.0sp1/quartus/bin ]; then
+                export PATH=/opt/altera/13.0sp1/quartus/bin:$PATH
+              fi
+
+              command -v quartus_sh
+              command -v quartus_cpf
+
+              quartus_sh --flow compile cpld/project.qpf
+
+              if [ -f cpld/output_files/project.pof ]; then
+                quartus_cpf -c cpld/output_files/project.pof cpld/output_files/project.svf
+              elif [ -f cpld/output_files/project.sof ]; then
+                quartus_cpf -c cpld/output_files/project.sof cpld/output_files/project.svf
               else
                 echo "No .pof or .sof found to convert into .svf" >&2
                 exit 1
@@ -42,7 +52,7 @@ jobs:
 
       - name: Show utilisation summary
         if: always()
-        run: grep -A 6 "Logic utilization" fpga/output_files/project.fit.rpt || true
+        run: grep -A 6 "Logic utilization" cpld/output_files/project.fit.rpt || true
 
       - name: Upload artifacts
         if: always()
@@ -51,9 +61,9 @@ jobs:
           name: bitstream-${{ github.sha }}
           retention-days: 30
           path: |
-            fpga/output_files/*.sof
-            fpga/output_files/*.pof
-            fpga/output_files/*.svf
-            fpga/output_files/*.map.rpt
-            fpga/output_files/*.fit.rpt
-            fpga/output_files/*.sta.rpt
+            cpld/output_files/*.sof
+            cpld/output_files/*.pof
+            cpld/output_files/*.svf
+            cpld/output_files/*.map.rpt
+            cpld/output_files/*.fit.rpt
+            cpld/output_files/*.sta.rpt
