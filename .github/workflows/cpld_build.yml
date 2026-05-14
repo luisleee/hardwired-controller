@@ -26,7 +26,7 @@ jobs:
             -v "${{ github.workspace }}:/build" \
             -w /build \
             ghcr.io/luisleee/quartus13-max7000:latest \
-            bash -lc '
+            bash -c '
               set -e
 
               if [ -d /opt/intelFPGA/13.0sp1/quartus/bin ]; then
