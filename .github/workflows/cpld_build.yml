@@ -41,7 +41,7 @@ jobs:
               quartus_sh --flow compile cpld/project.qpf 2>&1 | tee cpld/quartus_build.log
 
               if [ -f cpld/output_files/project.pof ]; then
-                quartus_cpf -c -q 1.0MHz -n p cpld/output_files/project.pof cpld/output_files/project.svf
+                quartus_cpf -c -q 1.0MHz -n 5000 cpld/output_files/project.pof cpld/output_files/project.svf
               else
                 echo "No .pof found to convert into .svf" >&2
                 exit 1
