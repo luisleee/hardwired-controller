@@ -1,35 +1,83 @@
-// Top-level wrapper for MAX EPM7128 CPLD.
-//
-// Pin locations live in fpga/project.qsf.
-// Replace the placeholder PIN_* assignments there with the actual package pins
-// from your board or schematic.
-//
-//  SW[9:7]  = ALU op (3 bits → 8 operations)
-//  SW[6:0]  = operand A (7 bits; A[7] is tied to 0)
-//  B        = hardcoded 8'h12
-//  LED[7:0] = result
-//  LED[8]   = zero flag
-//  LED[9]   = carry-out / borrow flag
 module top (
-    input  logic [9:0] SW,
-    output logic [9:0] LED
+    input  logic CLR,
+    input  logic T3,
+    input  logic SWA,
+    input  logic SWB,
+    input  logic SWC,
+    input  logic IR4,
+    input  logic IR5,
+    input  logic IR6,
+    input  logic IR7,
+    input  logic W1,
+    input  logic W2,
+    input  logic W3,
+    input  logic C,
+    input  logic Z,
+
+    output logic DRW,
+    output logic PCINC,
+    output logic LPC,
+    output logic LAR,
+    output logic PCADD,
+    output logic ARINC,
+    output logic SELCTL,
+    output logic MEMW,
+    output logic STOP,
+    output logic LIR,
+    output logic LDZ,
+    output logic LDC,
+    output logic CIN,
+    output logic [3:0] S,
+    output logic M,
+    output logic ABUS,
+    output logic SBUS,
+    output logic MBUS,
+    output logic SHORT,
+    output logic LONG,
+    output logic [3:0] SEL
 );
 
+// 瞎写的
+logic [7:0] a;
+logic [7:0] b;
+logic [2:0] op;
 logic [7:0] result;
-logic       zero;
 logic       carry_out;
+logic       zero;
+
+assign a  = {IR7, IR6, IR5, IR4, W3, W2, W1, T3};
+assign b  = 8'h12;
+assign op = {SWA, SWB, SWC};
 
 alu u_alu (
-    .a        ({1'b0, SW[6:0]}),
-    .b        (8'h12),
-    .op       (SW[9:7]),
+    .a        (a),
+    .b        (b),
+    .op       (op),
     .result   (result),
     .zero     (zero),
     .carry_out(carry_out)
 );
 
-assign LED[7:0] = result;
-assign LED[8]   = zero;
-assign LED[9]   = carry_out;
+assign DRW    = result[0];
+assign PCINC  = result[1];
+assign LPC    = result[2];
+assign LAR    = result[3];
+assign PCADD  = result[4];
+assign ARINC  = result[5];
+assign SELCTL = result[6];
+assign MEMW   = result[7];
+assign STOP   = carry_out;
+assign LIR    = CLR;
+assign LDZ    = zero;
+assign LDC    = carry_out;
+assign CIN    = C;
+assign S      = result[3:0];
+assign M      = result[4];
+assign ABUS   = result[5];
+assign SBUS   = result[6];
+assign MBUS   = result[7];
+assign SHORT  = IR6;
+assign LONG   = IR7;
+assign SEL    = 4'b0101;
 
 endmodule

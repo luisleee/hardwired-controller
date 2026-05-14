@@ -26,7 +26,19 @@ jobs:
             -v "${{ github.workspace }}:/build" \
             -w /build \
             ghcr.io/luisleee/quartus13-max7000:latest \
-            quartus_sh --flow compile fpga/project.qpf
+            bash -lc '
+              set -e
+              quartus_sh --flow compile fpga/project.qpf
+
+              if [ -f fpga/output_files/project.pof ]; then
+                quartus_cpf -c fpga/output_files/project.pof fpga/output_files/project.svf
+              elif [ -f fpga/output_files/project.sof ]; then
+                quartus_cpf -c fpga/output_files/project.sof fpga/output_files/project.svf
+              else
+                echo "No .pof or .sof found to convert into .svf" >&2
+                exit 1
+              fi
+            '
 
       - name: Show utilisation summary
         if: always()
@@ -41,6 +53,7 @@ jobs:
           path: |
             fpga/output_files/*.sof
             fpga/output_files/*.pof
+            fpga/output_files/*.svf
             fpga/output_files/*.map.rpt
             fpga/output_files/*.fit.rpt
             fpga/output_files/*.sta.rpt

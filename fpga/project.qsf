@@ -3,10 +3,6 @@
 #
 # Target device : Altera/Intel MAX EPM7128S CPLD
 #
-# IMPORTANT:
-#   1. Replace the DEVICE string below if your exact package/speed grade differs.
-#   2. Replace every PIN_* placeholder with the real package pin from your board.
-#   3. MAX7000-class CPLDs do not use the MAX10-specific flash assignments or SDC.
 # =============================================================================
 
 # ---- Device ---------------------------------------------------------------
@@ -28,24 +24,54 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 # Pin assignments — replace all placeholders with your actual package pins
 # =============================================================================
 
-set_location_assignment PIN_1  -to SW[0]
-set_location_assignment PIN_2  -to SW[1]
-set_location_assignment PIN_3  -to SW[2]
-set_location_assignment PIN_4  -to SW[3]
-set_location_assignment PIN_5  -to SW[4]
-set_location_assignment PIN_6  -to SW[5]
-set_location_assignment PIN_7  -to SW[6]
-set_location_assignment PIN_8  -to SW[7]
-set_location_assignment PIN_9  -to SW[8]
-set_location_assignment PIN_10 -to SW[9]
+set_location_assignment PIN_1  -to CLR
+set_location_assignment PIN_83 -to T3
+set_location_assignment PIN_4  -to SWA
+set_location_assignment PIN_5  -to SWB
+set_location_assignment PIN_6  -to SWC
 
-set_location_assignment PIN_11 -to LED[0]
-set_location_assignment PIN_12 -to LED[1]
-set_location_assignment PIN_13 -to LED[2]
-set_location_assignment PIN_14 -to LED[3]
-set_location_assignment PIN_15 -to LED[4]
-set_location_assignment PIN_16 -to LED[5]
-set_location_assignment PIN_17 -to LED[6]
-set_location_assignment PIN_18 -to LED[7]
-set_location_assignment PIN_19 -to LED[8]
-set_location_assignment PIN_20 -to LED[9]
+set_location_assignment PIN_8  -to IR4
+set_location_assignment PIN_9  -to IR5
+set_location_assignment PIN_10 -to IR6
+set_location_assignment PIN_11 -to IR7
+
+set_location_assignment PIN_12 -to W1
+set_location_assignment PIN_13 -to W2
+set_location_assignment PIN_14 -to W3
+
+set_location_assignment PIN_2  -to C
+set_location_assignment PIN_84 -to Z
+
+set_location_assignment PIN_20 -to DRW
+set_location_assignment PIN_21 -to PCINC
+set_location_assignment PIN_22 -to LPC
+set_location_assignment PIN_25 -to LAR
+
+set_location_assignment PIN_18 -to PCADD
+set_location_assignment PIN_24 -to ARINC
+set_location_assignment PIN_52 -to SELCTL
+
+set_location_assignment PIN_27 -to MEMW
+set_location_assignment PIN_28 -to STOP
+set_location_assignment PIN_29 -to LIR
+set_location_assignment PIN_30 -to LDZ
+set_location_assignment PIN_31 -to LDC
+
+set_location_assignment PIN_33 -to CIN
+set_location_assignment PIN_34 -to S[0]
+set_location_assignment PIN_35 -to S[1]
+set_location_assignment PIN_36 -to S[2]
+set_location_assignment PIN_37 -to S[3]
+
+set_location_assignment PIN_39 -to M
+set_location_assignment PIN_40 -to ABUS
+set_location_assignment PIN_41 -to SBUS
+
+set_location_assignment PIN_44 -to MBUS
+set_location_assignment PIN_45 -to SHORT
+set_location_assignment PIN_46 -to LONG
+
+set_location_assignment PIN_48 -to SEL[0]
+set_location_assignment PIN_49 -to SEL[1]
+set_location_assignment PIN_50 -to SEL[2]
+set_location_assignment PIN_51 -to SEL[3]
