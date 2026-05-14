@@ -1,5 +1,6 @@
 module top (
     input  logic CLR,
+    input  logic CLK,
     input  logic T3,
     input  logic SWA,
     input  logic SWB,
