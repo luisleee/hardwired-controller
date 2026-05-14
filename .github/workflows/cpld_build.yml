@@ -38,32 +38,35 @@ jobs:
               command -v quartus_sh
               command -v quartus_cpf
 
-              quartus_sh --flow compile cpld/project.qpf
+              quartus_sh --flow compile cpld/project.qpf 2>&1 | tee cpld/quartus_build.log
 
               if [ -f cpld/output_files/project.pof ]; then
                 quartus_cpf -c cpld/output_files/project.pof cpld/output_files/project.svf
-              elif [ -f cpld/output_files/project.sof ]; then
-                quartus_cpf -c cpld/output_files/project.sof cpld/output_files/project.svf
               else
-                echo "No .pof or .sof found to convert into .svf" >&2
+                echo "No .pof found to convert into .svf" >&2
                 exit 1
               fi
             '
 
       - name: Show utilisation summary
         if: always()
-        run: grep -A 6 "Logic utilization" cpld/output_files/project.fit.rpt || true
+        run: |
+          if [ -f cpld/output_files/project.fit.rpt ]; then
+            grep -A 6 "Logic utilization" cpld/output_files/project.fit.rpt || true
+          else
+            echo "project.fit.rpt not generated"
+          fi
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bitstream-${{ github.sha }}
+          name: cpld-build-${{ github.sha }}
           retention-days: 30
           path: |
-            cpld/output_files/*.sof
             cpld/output_files/*.pof
             cpld/output_files/*.svf
             cpld/output_files/*.map.rpt
             cpld/output_files/*.fit.rpt
             cpld/output_files/*.sta.rpt
+            cpld/quartus_build.log
