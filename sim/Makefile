@@ -1,35 +1,49 @@
-IVERILOG ?= iverilog
-VVP      ?= vvp
-GTKWAVE  ?= gtkwave
-VERILATOR?= verilator
+IVERILOG  ?= iverilog
+VVP       ?= vvp
+GTKWAVE   ?= gtkwave
+VERILATOR ?= verilator
 
-SRC   = ../rtl/alu.sv
-TB    = tb_alu.sv
-BIN   = tb_alu.vvp
-WAVE  = tb_alu.vcd
+RTL_DIR := ../rtl
+TB_GLOB := tb_*.sv
+SRCS    := $(sort $(wildcard $(RTL_DIR)/*.sv))
+TBS     := $(sort $(wildcard $(TB_GLOB)))
 
-.PHONY: sim wave lint lint-v clean
+TB ?= $(firstword $(TBS))
+TB_BASE := $(basename $(TB))
+BIN     := $(TB_BASE).vvp
+WAVE    := $(TB_BASE).vcd
 
-# Default: compile + run
-sim: $(WAVE)
+.PHONY: sim wave lint list clean help
 
-$(WAVE): $(TB) $(SRC)
-	$(IVERILOG) -g2012 -Wall -o $(BIN) $(TB) $(SRC)
+help:
+	@echo "make list                    # 列出所有 testbench"
+	@echo "make sim TB=tb_xxx.sv        # 运行指定 testbench"
+	@echo "make tb_xxx.vcd              # 直接构建并运行某个 testbench"
+	@echo "make wave TB=tb_xxx.sv       # 打开指定波形"
+	@echo "make lint                    # Verilator lint 全部 RTL"
+	@echo "make clean                   # 删除 *.vvp *.vcd obj_dir"
+
+list:
+	@printf '%s\n' $(TBS)
+
+sim:
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -o $(BIN) $(TB) $(SRCS)
 	$(VVP) $(BIN)
 
-# Open waveform (requires GTKWave)
+%.vcd: %.sv $(SRCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -o $*.vvp $< $(SRCS)
+	$(VVP) $*.vvp
+
+$(WAVE): $(TB) $(SRCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -o $(BIN) $(TB) $(SRCS)
+	$(VVP) $(BIN)
+
 wave: $(WAVE)
 	$(GTKWAVE) $(WAVE) &
 
-# Lint with Verilator (fast, no simulation)
 lint:
-	$(VERILATOR) --lint-only -Wall -sv $(SRC)
-
-# Full Verilator simulation (generates C++ model)
-lint-v: $(SRC) $(TB)
-	$(VERILATOR) --binary -Wall -sv --top-module tb_alu \
-	    -o ../build/sim_tb $(TB) $(SRC)
+	$(VERILATOR) --lint-only -Wall -sv $(SRCS)
 
 clean:
-	rm -f $(BIN) $(WAVE)
-	rm -rf ../build/
+	rm -f ./*.vvp ./*.vcd
+	rm -rf ./obj_dir

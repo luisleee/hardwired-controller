@@ -56,7 +56,7 @@ make sim
 作用：
 - 用 `iverilog -g2012` 编译 testbench
 - 用 `vvp` 运行仿真
-- 生成波形文件 `tb_alu.vcd`
+- 生成波形文件
 
 ### 打开波形
 
@@ -86,23 +86,21 @@ make clean
 4. 上传 artifact
 
 上传产物包括：
-- `*.sof`
 - `*.pof`
 - `*.svf`
 - `*.map.rpt`
 - `*.fit.rpt`
 - `*.sta.rpt`
 
-## OpenOCD / SVF
+## 烧录
 
-CI 会生成：
+CI 会生成`project.svf`。
 
-- `cpld/output_files/project.svf`
+可以用 OpenOCD进行烧录（暂时没有正确的方法）
 
-它可以作为 OpenOCD 的输入文件使用。
-
+会出错：
 ```bash
-openocd -f interface/usb-blaster.cfg -c "init" -c "svf project.svf" -c "shutdown"
+openocd -f interface/altera-usb-blaster.cfg -c "jtag newtap epm7128s tap -irlen 10 -expected-id 0x071280DD" -c "init" -c "svf project.svf" -c "shutdown"
 ```
 
 ## 引脚约束
