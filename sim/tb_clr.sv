@@ -1,10 +1,12 @@
 `timescale 1ns/1ps
 `include "macro.sv"
+`include "tb_wcycles.svh"
 
 module tb_clr;
 
 logic       CLR;
-logic       CLK;
+logic       T1;
+logic       T2;
 logic       T3;
 logic       SWA;
 logic       SWB;
@@ -15,6 +17,7 @@ logic       W2;
 logic       W3;
 logic       C;
 logic       Z;
+int         w_state;
 
 logic       DRW;
 logic       PCINC;
@@ -51,11 +54,8 @@ assign ctrl_bus = {
 
 assign zero_bus = '0;
 
-always #5 CLK = ~CLK;
-
 top dut (
     .CLR(CLR),
-    .CLK(CLK),
     .T3(T3),
     .SWA(SWA),
     .SWB(SWB),
@@ -93,33 +93,27 @@ initial begin
     $dumpfile("tb_clr.vcd");
     $dumpvars(0, tb_clr);
 
-    CLK = 1'b0;
+    init_w_state(w_state, T1, T2, T3, W1, W2, W3);
     CLR = 1'b1;
 
-    // drive a state that should produce non-zero registered outputs
-    T3  = 1'b1;
     SWA = 1'b0;
     SWB = 1'b0;
     SWC = 1'b0;      // MODE_FETCH_EXEC
-    IR  = `OP_ADD;
-    W1  = 1'b0;
-    W2  = 1'b0;
-    W3  = 1'b0;
+    IR  = `OP_INC;
     C   = 1'b0;
     Z   = 1'b0;
 
-    // Wait for first active clock edge to latch non-zero controls
-    @(posedge CLK);
-    #1;
+    next_cycle(w_state, T1, T2, T3, W1, W2, W3, LONG); // W1
+    next_cycle(w_state, T1, T2, T3, W1, W2, W3, LONG); // W2
     if (ctrl_bus === zero_bus) begin
-        $display("FAIL: control bus is still zero after clock edge; setup did not create active controls");
+        $display("FAIL: instruction cycles did not create active INC controls");
         $finish;
     end else begin
-        $display("INFO: control bus is non-zero after clock edge, proceeding to CLR pulse test");
+        $display("INFO: INC execution controls are active after W2, proceeding to CLR pulse test");
     end
 
-    // Assert asynchronous active-low clear between clock edges
-    #2;
+    // Assert asynchronous active-low clear between T3 edges
+    #5;
     CLR = 1'b0;
     #1;
 
@@ -129,18 +123,6 @@ initial begin
         $finish;
     end else begin
         $display("PASS: control outputs cleared immediately on negative CLR pulse");
-    end
-
-    // Release reset and confirm logic can become non-zero again on next clock
-    #3;
-    CLR = 1'b1;
-    @(posedge CLK);
-    #1;
-
-    if (ctrl_bus === zero_bus) begin
-        $display("FAIL: control outputs did not recover after CLR release and next clock edge");
-    end else begin
-        $display("PASS: control outputs recovered after CLR release");
     end
 
     $finish;

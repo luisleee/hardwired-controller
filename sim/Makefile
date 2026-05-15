@@ -4,8 +4,10 @@ GTKWAVE   ?= gtkwave
 VERILATOR ?= verilator
 
 RTL_DIR := ../rtl
+SIM_DIR := .
 TB_GLOB := tb_*.sv
 SRCS    := $(sort $(wildcard $(RTL_DIR)/*.sv))
+INCS    := $(sort $(wildcard $(SIM_DIR)/*.svh))
 TBS     := $(sort $(wildcard $(TB_GLOB)))
 
 TB ?= $(firstword $(TBS))
@@ -27,15 +29,15 @@ list:
 	@printf '%s\n' $(TBS)
 
 sim:
-	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -o $(BIN) $(TB) $(SRCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $(BIN) $(TB) $(SRCS) $(INCS)
 	$(VVP) $(BIN)
 
 %.vcd: %.sv $(SRCS)
-	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -o $*.vvp $< $(SRCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $*.vvp $< $(SRCS) $(INCS)
 	$(VVP) $*.vvp
 
 $(WAVE): $(TB) $(SRCS)
-	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -o $(BIN) $(TB) $(SRCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $(BIN) $(TB) $(SRCS) $(INCS)
 	$(VVP) $(BIN)
 
 wave: $(WAVE)

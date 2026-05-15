@@ -26,7 +26,6 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 # =============================================================================
 
 set_location_assignment PIN_1  -to CLR
-set_location_assignment PIN_60 -to CLK
 
 set_location_assignment PIN_83 -to T3
 set_location_assignment PIN_4  -to SWA

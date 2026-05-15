@@ -3,7 +3,6 @@
 module top (
     input  logic CLR,
 
-    input  logic CLK,
     input  logic T3,
     input  logic SWA,
     input  logic SWB,
@@ -101,81 +100,38 @@ always_comb begin
     SEL_d    = 4'b0000;
 
     if (fetch_exec_mode) begin
+        if (W1) begin
+            LIR_d   = 1'b1;
+            PCINC_d = 1'b1;
+            SHORT_d = 1'b1;
+        end
+
         case (opcode)
-            `OP_NOP: begin
-                
-            end
-
-            `OP_ADD: begin
-                
-            end
-
-            `OP_SUB: begin
-                
-            end
-
-            `OP_AND: begin
-                
-            end
-
-            `OP_OR: begin
-                
-            end
-
-            `OP_NOT: begin
-                
-            end
-
             `OP_INC: begin
-                
-            end
-
-            `OP_LD: begin
-                
-            end
-
-            `OP_ST: begin
-                
-            end
-
-            `OP_JC: begin
-                
-            end
-
-            `OP_JZ: begin
-                
-            end
-
-            `OP_JMP: begin
-                
-            end
-
-            `OP_OUTA: begin
-                
-            end
-
-            `OP_MOV: begin
-                
-            end
-
-            `OP_STP: begin
-                
+                if (W2) begin
+                    SHORT_d = 1'b1;
+                    S_d    = 4'b0000;
+                    ABUS_d = 1'b1;
+                    DRW_d  = 1'b1;
+                    LDC_d  = 1'b1;
+                    LDZ_d  = 1'b1;
+                end
             end
 
             default: ;
         endcase
     end else if (write_mem_mode) begin
-        
+        SHORT_d = 1'b1;
     end else if (read_mem_mode) begin
-        
+        SHORT_d = 1'b1;
     end else if (read_reg_mode) begin
-        
+        SHORT_d = 1'b1;
     end else if (write_reg_mode) begin
-        
+        SHORT_d = 1'b1;
     end
 end
 
-always_ff @(posedge CLK or negedge CLR) begin
+always_ff @(posedge T3 or negedge CLR) begin
     if (!CLR) begin
         DRW    <= 1'b0;
         PCINC  <= 1'b0;
