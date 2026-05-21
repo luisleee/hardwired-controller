@@ -70,7 +70,6 @@ logic [3:0] SEL_d;
 logic ST0;
 logic SST0;
 logic ST0_d;
-logic SST0_d;
 
 assign mode = {SWC, SWB, SWA};
 assign opcode = IR[7:4];
@@ -80,6 +79,54 @@ assign read_reg_mode   = (mode == `MODE_READ_REG);
 assign read_mem_mode   = (mode == `MODE_READ_MEM);
 assign write_mem_mode  = (mode == `MODE_WRITE_MEM);
 assign fetch_exec_mode = (mode == `MODE_FETCH_EXEC);
+
+logic [2:0] count;
+logic preW1;
+logic preW2;
+logic preW3;
+
+always_comb begin
+    preW1 = 1'b0;
+    preW2 = 1'b0;
+    preW3 = 1'b0;
+
+    if (write_reg_mode || read_reg_mode) begin
+        if ((!W1 && !W2) || W2) begin
+            preW1 = 1'b1;
+        end
+    end else if (read_mem_mode || write_mem_mode) begin
+        if ((!W1 && !W2) || W1) begin
+            preW1 = 1'b1;
+        end
+    end else if (fetch_exec_mode) begin
+        if (count == 2'b10) begin
+            if (IR == `OP_LD || IR == `OP_ST) begin
+                if ((!W1 && !W2 && !W3) || W3) begin
+                    preW1 = 1'b1;
+                end
+            end
+            else begin
+                if ((!W1 && !W2 && !W3) || W2) begin
+                    preW1 = 1'b1;
+                end
+            end
+        end else if (count == 2'b00 || count == 2'b01) begin
+            preW1 = 1'b1;
+        end
+    end
+
+    if (write_reg_mode || read_reg_mode || (fetch_exec_mode && (count == 2'b10))) begin
+        if (W1) begin
+            preW2 = 1'b1;
+        end
+    end
+
+    if (fetch_exec_mode && (count == 2'b10) && (IR == `OP_LD || IR == `OP_ST)) begin
+        if (W2) begin
+            preW3 = 1'b1;
+        end
+    end
+end
 
 always_comb begin
     DRW_d    = 1'b0;
@@ -104,10 +151,10 @@ always_comb begin
     LONG_d   = 1'b0;
     SEL_d    = 4'b0000;
 
-    SST0_d   = 1'b0;
+    SST0   = 1'b0;
 
     if (fetch_exec_mode) begin
-        if (W1) begin
+        if (preW1) begin
             LIR_d   = 1'b1;
             PCINC_d = 1'b1;
         end
@@ -115,7 +162,7 @@ always_comb begin
         case (opcode)
             `OP_NOP: ;
             `OP_ADD: begin
-                if (W2) begin
+                if (preW2) begin
                     S_d = 4'b1001;
                     CIN_d = 1'b1;
                     ABUS_d = 1'b1;
@@ -125,7 +172,7 @@ always_comb begin
                 end
             end
             `OP_SUB: begin
-                if (W2) begin
+                if (preW2) begin
                     S_d = 4'b0110;
                     ABUS_d = 1'b1;
                     DRW_d  = 1'b1;
@@ -134,7 +181,7 @@ always_comb begin
                 end
             end
             `OP_AND: begin
-                if (W2) begin
+                if (preW2) begin
                     M_d = 1'b1;
                     S_d = 4'b1011;
                     ABUS_d = 1'b1;
@@ -142,7 +189,7 @@ always_comb begin
                 end
             end
             `OP_INC: begin
-                if (W2) begin
+                if (preW2) begin
                     S_d    = 4'b0000;
                     ABUS_d = 1'b1;
                     DRW_d  = 1'b1;
@@ -152,7 +199,7 @@ always_comb begin
             end
 
             `OP_LD: begin
-                if (W2) begin
+                if (preW2) begin
                     M_d = 1'b1;
                     S_d = 4'b1010;
                     ABUS_d = 1'b1;
@@ -160,13 +207,13 @@ always_comb begin
                     LONG_d = 1'b1;
                 end
 
-                if (W3) begin
+                if (preW3) begin
                     DRW_d = 1'b1;
                     MBUS_d = 1'b1;
                 end
             end
             `OP_ST: begin
-                if (W2) begin
+                if (preW2) begin
                     M_d = 1'b1;
                     S_d = 4'b1111;
                     ABUS_d = 1'b1;
@@ -174,7 +221,7 @@ always_comb begin
                     LONG_d = 1'b1;
                 end
 
-                if (W3) begin
+                if (preW3) begin
                     S_d = 4'b1010;
                     M_d = 1'b1;
                     ABUS_d = 1'b1;
@@ -183,7 +230,7 @@ always_comb begin
             end
 
             `OP_JC: begin
-                if (W2) begin
+                if (preW2) begin
                     if (C) begin
                         PCADD_d = 1'b1;
                     end
@@ -191,7 +238,7 @@ always_comb begin
             end
 
             `OP_JZ: begin
-                if (W2) begin
+                if (preW2) begin
                     if (Z) begin
                         PCADD_d = 1'b1;
                     end
@@ -199,7 +246,7 @@ always_comb begin
             end
 
             `OP_OUT: begin
-                if (W2) begin
+                if (preW2) begin
                     S_d = 4'b1111;
                     ABUS_d = 1'b1;
                     M_d = 1'b1;
@@ -207,7 +254,7 @@ always_comb begin
             end
 
             `OP_JMP: begin
-                if (W2) begin
+                if (preW2) begin
                     M_d = 1'b1;
                     S_d = 4'b1111;
                     ABUS_d = 1'b1;
@@ -216,7 +263,7 @@ always_comb begin
             end
 
             `OP_STP: begin
-                if (W2) begin
+                if (preW2) begin
                     STOP_d = 1'b1;
                 end
             end
@@ -228,7 +275,7 @@ always_comb begin
             SBUS_d = 1'b1;
             LAR_d = 1'b1;
             STOP_d = 1'b1;
-            SST0_d = 1'b1;
+            SST0 = 1'b1;
             SHORT_d = 1'b1;
             SELCTL_d = 1'b1;
         end else begin
@@ -244,7 +291,7 @@ always_comb begin
             SBUS_d = 1'b1;
             LAR_d = 1'b1;
             STOP_d = 1'b1;
-            SST0_d = 1'b1;
+            SST0 = 1'b1;
             SHORT_d = 1'b1;
             SELCTL_d = 1'b1;
         end else begin
@@ -255,20 +302,20 @@ always_comb begin
             SELCTL_d = 1'b1;
         end
     end else if (read_reg_mode) begin
-        if (W1) begin
+        if (preW1) begin
             SEL_d = 4'b0001;
             SELCTL_d = 1'b1;
             STOP_d = 1'b1;
         end
 
-        if (W2) begin
+        if (preW2) begin
             SEL_d = 4'b1011;
             SELCTL_d = 1'b1;
             STOP_d = 1'b1;
         end
     end else if (write_reg_mode) begin
         if (!ST0) begin
-            if (W1) begin
+            if (preW1) begin
                 SBUS_d = 1'b1;
                 SEL_d = 4'b0011;
                 SELCTL_d = 1'b1;
@@ -276,7 +323,7 @@ always_comb begin
                 STOP_d = 1'b1;
             end
 
-            if (W2) begin
+            if (preW2) begin
                 SBUS_d = 1'b1;
                 SEL_d = 4'b0100;
                 SELCTL_d = 1'b1;
@@ -286,7 +333,7 @@ always_comb begin
                 SST0_d = 1'b1;
             end
         end else begin
-            if (W1) begin
+            if (preW1) begin
                 SBUS_d = 1'b1;
                 SEL_d = 4'b1001;
                 SELCTL_d = 1'b1;
@@ -294,7 +341,7 @@ always_comb begin
                 STOP_d = 1'b1;
             end
 
-            if (W2) begin
+            if (preW2) begin
                 SBUS_d = 1'b1;
                 SEL_d = 4'b1110;
                 SELCTL_d = 1'b1;
@@ -306,7 +353,7 @@ always_comb begin
 
     if (SST0) begin
         ST0_d = 1'b1;
-    end else if (write_reg_mode && W2) begin
+    end else if (write_reg_mode && preW2 && ST0) begin
         ST0_d = 1'b0;
     end else begin
         ST0_d = ST0;
@@ -340,7 +387,13 @@ always_ff @(posedge T3 or negedge CLR) begin
 
         ST0    <= 1'b0;
         SST0   <= 1'b0;
+
+        count  <= 2'b00;
     end else begin
+        if (count == 2'b00 || count == 2'b01) begin
+            count <= count + 2'b01;
+        end
+
         DRW    <= DRW_d;
         PCINC  <= PCINC_d;
         LPC    <= LPC_d;
@@ -363,7 +416,6 @@ always_ff @(posedge T3 or negedge CLR) begin
         LONG   <= LONG_d;
         SEL    <= SEL_d;
         ST0    <= ST0_d;
-        SST0   <= SST0_d;
     end
 end
 
