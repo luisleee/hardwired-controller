@@ -68,7 +68,9 @@ logic       LONG_d;
 logic [3:0] SEL_d;
 
 logic ST0;
+logic SST0;
 logic ST0_d;
+logic SST0_d;
 
 assign mode = {SWC, SWB, SWA};
 assign opcode = IR[7:4];
@@ -102,7 +104,7 @@ always_comb begin
     LONG_d   = 1'b0;
     SEL_d    = 4'b0000;
 
-    ST0_d    = 1'b0;
+    SST0_d   = 1'b0;
 
     if (fetch_exec_mode) begin
         if (W1) begin
@@ -226,7 +228,7 @@ always_comb begin
             SBUS_d = 1'b1;
             LAR_d = 1'b1;
             STOP_d = 1'b1;
-            ST0_d = 1'b1;
+            SST0_d = 1'b1;
             SHORT_d = 1'b1;
             SELCTL_d = 1'b1;
         end else begin
@@ -242,7 +244,7 @@ always_comb begin
             SBUS_d = 1'b1;
             LAR_d = 1'b1;
             STOP_d = 1'b1;
-            ST0_d = 1'b1;
+            SST0_d = 1'b1;
             SHORT_d = 1'b1;
             SELCTL_d = 1'b1;
         end else begin
@@ -281,7 +283,7 @@ always_comb begin
                 DRW_d = 1'b1;
                 STOP_d = 1'b1;
 
-                ST0_d = 1'b1;
+                SST0_d = 1'b1;
             end
         end else begin
             if (W1) begin
@@ -301,6 +303,15 @@ always_comb begin
             end
         end
     end
+
+    if (SST0) begin
+        ST0_d = 1'b1;
+    end else if (write_reg_mode && W2) begin
+        ST0_d = 1'b0;
+    end else begin
+        ST0_d = ST0;
+    end
+    
 end
 
 always_ff @(posedge T3 or negedge CLR) begin
@@ -328,6 +339,7 @@ always_ff @(posedge T3 or negedge CLR) begin
         SEL    <= 4'b0000;
 
         ST0    <= 1'b0;
+        SST0   <= 1'b0;
     end else begin
         DRW    <= DRW_d;
         PCINC  <= PCINC_d;
@@ -351,6 +363,7 @@ always_ff @(posedge T3 or negedge CLR) begin
         LONG   <= LONG_d;
         SEL    <= SEL_d;
         ST0    <= ST0_d;
+        SST0   <= SST0_d;
     end
 end
 
