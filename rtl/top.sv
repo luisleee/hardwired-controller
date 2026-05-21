@@ -330,7 +330,7 @@ always_comb begin
                 DRW_d = 1'b1;
                 STOP_d = 1'b1;
 
-                SST0_d = 1'b1;
+                SST0 = 1'b1;
             end
         end else begin
             if (preW1) begin
