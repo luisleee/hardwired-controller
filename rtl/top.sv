@@ -271,35 +271,39 @@ always_comb begin
             default: ;
         endcase
     end else if (write_mem_mode) begin
-        if (!ST0) begin
-            SBUS_d = 1'b1;
-            LAR_d = 1'b1;
-            STOP_d = 1'b1;
-            SST0 = 1'b1;
-            SHORT_d = 1'b1;
-            SELCTL_d = 1'b1;
-        end else begin
-            SBUS_d = 1'b1;
-            MEMW_d = 1'b1;
-            ARINC_d = 1'b1;
-            STOP_d = 1'b1;
-            SHORT_d = 1'b1;
-            SELCTL_d = 1'b1;
+        if (preW1) begin
+            if (!ST0) begin
+                SBUS_d = 1'b1;
+                LAR_d = 1'b1;
+                STOP_d = 1'b1;
+                SST0 = 1'b1;
+                SHORT_d = 1'b1;
+                SELCTL_d = 1'b1;
+            end else begin
+                SBUS_d = 1'b1;
+                MEMW_d = 1'b1;
+                ARINC_d = 1'b1;
+                STOP_d = 1'b1;
+                SHORT_d = 1'b1;
+                SELCTL_d = 1'b1;
+            end
         end
     end else if (read_mem_mode) begin
-        if (!ST0) begin
-            SBUS_d = 1'b1;
-            LAR_d = 1'b1;
-            STOP_d = 1'b1;
-            SST0 = 1'b1;
-            SHORT_d = 1'b1;
-            SELCTL_d = 1'b1;
-        end else begin
-            MBUS_d = 1'b1;
-            ARINC_d = 1'b1;
-            STOP_d = 1'b1;
-            SHORT_d = 1'b1;
-            SELCTL_d = 1'b1;
+        if (preW1) begin
+            if (!ST0) begin
+                SBUS_d = 1'b1;
+                LAR_d = 1'b1;
+                STOP_d = 1'b1;
+                SST0 = 1'b1;
+                SHORT_d = 1'b1;
+                SELCTL_d = 1'b1;
+            end else begin
+                MBUS_d = 1'b1;
+                ARINC_d = 1'b1;
+                STOP_d = 1'b1;
+                SHORT_d = 1'b1;
+                SELCTL_d = 1'b1;
+            end
         end
     end else if (read_reg_mode) begin
         if (preW1) begin
