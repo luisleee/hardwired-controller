@@ -386,7 +386,6 @@ always_ff @(posedge T3 or negedge CLR) begin
         SEL    <= 4'b0000;
 
         ST0    <= 1'b0;
-        SST0   <= 1'b0;
 
         count  <= 2'b00;
     end else begin
