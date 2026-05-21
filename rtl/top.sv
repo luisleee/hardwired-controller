@@ -67,6 +67,9 @@ logic       SHORT_d;
 logic       LONG_d;
 logic [3:0] SEL_d;
 
+logic ST0;
+logic ST0_d;
+
 assign mode = {SWC, SWB, SWA};
 assign opcode = IR[7:4];
 
@@ -99,17 +102,45 @@ always_comb begin
     LONG_d   = 1'b0;
     SEL_d    = 4'b0000;
 
+    ST0_d    = 1'b0;
+
     if (fetch_exec_mode) begin
         if (W1) begin
             LIR_d   = 1'b1;
             PCINC_d = 1'b1;
-            SHORT_d = 1'b1;
         end
 
         case (opcode)
+            `OP_NOP: ;
+            `OP_ADD: begin
+                if (W2) begin
+                    S_d = 4'b1001;
+                    CIN_d = 1'b1;
+                    ABUS_d = 1'b1;
+                    DRW_d  = 1'b1;
+                    LDC_d  = 1'b1;
+                    LDZ_d  = 1'b1;
+                end
+            end
+            `OP_SUB: begin
+                if (W2) begin
+                    S_d = 4'b0110;
+                    ABUS_d = 1'b1;
+                    DRW_d  = 1'b1;
+                    LDC_d  = 1'b1;
+                    LDZ_d  = 1'b1;
+                end
+            end
+            `OP_AND: begin
+                if (W2) begin
+                    M_d = 1'b1;
+                    S_d = 4'b1011;
+                    ABUS_d = 1'b1;
+                    DRW_d  = 1'b1;
+                end
+            end
             `OP_INC: begin
                 if (W2) begin
-                    SHORT_d = 1'b1;
                     S_d    = 4'b0000;
                     ABUS_d = 1'b1;
                     DRW_d  = 1'b1;
@@ -118,16 +149,157 @@ always_comb begin
                 end
             end
 
+            `OP_LD: begin
+                if (W2) begin
+                    M_d = 1'b1;
+                    S_d = 4'b1010;
+                    ABUS_d = 1'b1;
+                    LAR_d = 1'b1;
+                    LONG_d = 1'b1;
+                end
+
+                if (W3) begin
+                    DRW_d = 1'b1;
+                    MBUS_d = 1'b1;
+                end
+            end
+            `OP_ST: begin
+                if (W2) begin
+                    M_d = 1'b1;
+                    S_d = 4'b1111;
+                    ABUS_d = 1'b1;
+                    LAR_d = 1'b1;
+                    LONG_d = 1'b1;
+                end
+
+                if (W3) begin
+                    S_d = 4'b1010;
+                    M_d = 1'b1;
+                    ABUS_d = 1'b1;
+                    MEMW_d = 1'b1;
+                end
+            end
+
+            `OP_JC: begin
+                if (W2) begin
+                    if (C) begin
+                        PCADD_d = 1'b1;
+                    end
+                end
+            end
+
+            `OP_JZ: begin
+                if (W2) begin
+                    if (Z) begin
+                        PCADD_d = 1'b1;
+                    end
+                end
+            end
+
+            `OP_OUT: begin
+                if (W2) begin
+                    S_d = 4'b1111;
+                    ABUS_d = 1'b1;
+                    M_d = 1'b1;
+                end
+            end
+
+            `OP_JMP: begin
+                if (W2) begin
+                    M_d = 1'b1;
+                    S_d = 4'b1111;
+                    ABUS_d = 1'b1;
+                    LPC_d = 1'b1;
+                end
+            end
+
+            `OP_STP: begin
+                if (W2) begin
+                    STOP_d = 1'b1;
+                end
+            end
+
             default: ;
         endcase
     end else if (write_mem_mode) begin
-        SHORT_d = 1'b1;
+        if (!ST0) begin
+            SBUS_d = 1'b1;
+            LAR_d = 1'b1;
+            STOP_d = 1'b1;
+            ST0_d = 1'b1;
+            SHORT_d = 1'b1;
+            SELCTL_d = 1'b1;
+        end else begin
+            SBUS_d = 1'b1;
+            MEMW_d = 1'b1;
+            ARINC_d = 1'b1;
+            STOP_d = 1'b1;
+            SHORT_d = 1'b1;
+            SELCTL_d = 1'b1;
+        end
     end else if (read_mem_mode) begin
-        SHORT_d = 1'b1;
+        if (!ST0) begin
+            SBUS_d = 1'b1;
+            LAR_d = 1'b1;
+            STOP_d = 1'b1;
+            ST0_d = 1'b1;
+            SHORT_d = 1'b1;
+            SELCTL_d = 1'b1;
+        end else begin
+            MBUS_d = 1'b1;
+            ARINC_d = 1'b1;
+            STOP_d = 1'b1;
+            SHORT_d = 1'b1;
+            SELCTL_d = 1'b1;
+        end
     end else if (read_reg_mode) begin
-        SHORT_d = 1'b1;
+        if (W1) begin
+            SEL_d = 4'b0001;
+            SELCTL_d = 1'b1;
+            STOP_d = 1'b1;
+        end
+
+        if (W2) begin
+            SEL_d = 4'b1011;
+            SELCTL_d = 1'b1;
+            STOP_d = 1'b1;
+        end
     end else if (write_reg_mode) begin
-        SHORT_d = 1'b1;
+        if (!ST0) begin
+            if (W1) begin
+                SBUS_d = 1'b1;
+                SEL_d = 4'b0011;
+                SELCTL_d = 1'b1;
+                DRW_d = 1'b1;
+                STOP_d = 1'b1;
+            end
+
+            if (W2) begin
+                SBUS_d = 1'b1;
+                SEL_d = 4'b0100;
+                SELCTL_d = 1'b1;
+                DRW_d = 1'b1;
+                STOP_d = 1'b1;
+
+                ST0_d = 1'b1;
+            end
+        end else begin
+            if (W1) begin
+                SBUS_d = 1'b1;
+                SEL_d = 4'b1001;
+                SELCTL_d = 1'b1;
+                DRW_d = 1'b1;
+                STOP_d = 1'b1;
+            end
+
+            if (W2) begin
+                SBUS_d = 1'b1;
+                SEL_d = 4'b1110;
+                SELCTL_d = 1'b1;
+                DRW_d = 1'b1;
+                STOP_d = 1'b1;
+            end
+        end
     end
 end
 
@@ -154,6 +326,8 @@ always_ff @(posedge T3 or negedge CLR) begin
         SHORT  <= 1'b0;
         LONG   <= 1'b0;
         SEL    <= 4'b0000;
+
+        ST0    <= 1'b0;
     end else begin
         DRW    <= DRW_d;
         PCINC  <= PCINC_d;
@@ -176,6 +350,7 @@ always_ff @(posedge T3 or negedge CLR) begin
         SHORT  <= SHORT_d;
         LONG   <= LONG_d;
         SEL    <= SEL_d;
+        ST0    <= ST0_d;
     end
 end
 

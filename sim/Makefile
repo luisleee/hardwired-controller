@@ -44,7 +44,8 @@ wave: $(WAVE)
 	$(GTKWAVE) $(WAVE) &
 
 lint:
-	$(VERILATOR) --lint-only -Wall -sv $(SRCS)
+	$(VERILATOR) --lint-only -Wall -sv -I$(RTL_DIR) \
+	    $(filter-out $(RTL_DIR)/macro.sv, $(SRCS))
 
 clean:
 	rm -f ./*.vvp ./*.vcd

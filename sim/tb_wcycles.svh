@@ -1,9 +1,10 @@
 `ifndef TB_WCYCLES_SVH
 `define TB_WCYCLES_SVH
 
-localparam int W_STATE_1 = 1;
-localparam int W_STATE_2 = 2;
-localparam int W_STATE_3 = 3;
+localparam int W_STATE_HALT = 0;
+localparam int W_STATE_1    = 1;
+localparam int W_STATE_2    = 2;
+localparam int W_STATE_3    = 3;
 
 task automatic init_w_state(
     output int   w_state,
@@ -48,6 +49,11 @@ begin
 end
 endtask
 
+// 步进一个 CPU 周期，并按 SHORT/LONG/STOP 更新 w_state:
+//   W1 结束: SHORT=1 → 留在W1; SHORT=0 → 进W2
+//   W2 结束: LONG=1  → 进W3;  LONG=0  → 回W1
+//   W3 结束: 无条件回W1
+//   任意周期结束: STOP=1 → 进 W_STATE_HALT，后续调用为空操作
 task automatic next_cycle(
     inout  int   w_state,
     output logic T1,
@@ -56,33 +62,49 @@ task automatic next_cycle(
     output logic W1,
     output logic W2,
     output logic W3,
-    input  logic LONG
+    input  logic SHORT,
+    input  logic LONG,
+    input  logic STOP
 );
 begin
-    case (w_state)
-        W_STATE_1: begin
-            cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b1, 1'b0, 1'b0);
-            w_state = W_STATE_2;
-        end
+    if (w_state == W_STATE_HALT) begin
+        // 已停止，空操作
+    end else begin
+        case (w_state)
+            W_STATE_1: begin
+                cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b1, 1'b0, 1'b0);
+                if (STOP)
+                    w_state = W_STATE_HALT;
+                else if (SHORT)
+                    w_state = W_STATE_1;
+                else
+                    w_state = W_STATE_2;
+            end
 
-        W_STATE_2: begin
-            cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b0, 1'b1, 1'b0);
-            if (LONG)
-                w_state = W_STATE_3;
-            else
-                w_state = W_STATE_1;
-        end
+            W_STATE_2: begin
+                cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b0, 1'b1, 1'b0);
+                if (STOP)
+                    w_state = W_STATE_HALT;
+                else if (LONG)
+                    w_state = W_STATE_3;
+                else
+                    w_state = W_STATE_1;
+            end
 
-        W_STATE_3: begin
-            cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b0, 1'b0, 1'b1);
-            w_state = W_STATE_1;
-        end
+            W_STATE_3: begin
+                cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b0, 1'b0, 1'b1);
+                if (STOP)
+                    w_state = W_STATE_HALT;
+                else
+                    w_state = W_STATE_1;
+            end
 
-        default: begin
-            cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b1, 1'b0, 1'b0);
-            w_state = W_STATE_2;
-        end
-    endcase
+            default: begin
+                cpu_cycle(T1, T2, T3, W1, W2, W3, 1'b1, 1'b0, 1'b0);
+                w_state = W_STATE_2;
+            end
+        endcase
+    end
 end
 endtask
 

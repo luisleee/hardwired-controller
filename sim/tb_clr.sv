@@ -103,8 +103,8 @@ initial begin
     C   = 1'b0;
     Z   = 1'b0;
 
-    next_cycle(w_state, T1, T2, T3, W1, W2, W3, LONG); // W1
-    next_cycle(w_state, T1, T2, T3, W1, W2, W3, LONG); // W2
+    next_cycle(w_state, T1, T2, T3, W1, W2, W3, SHORT, LONG, STOP); // W1
+    next_cycle(w_state, T1, T2, T3, W1, W2, W3, SHORT, LONG, STOP); // W2
     if (ctrl_bus === zero_bus) begin
         $display("FAIL: instruction cycles did not create active INC controls");
         $finish;
