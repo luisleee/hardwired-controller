@@ -95,7 +95,7 @@ always_comb begin
             preW1 = 1'b1;
         end
     end else if (read_mem_mode || write_mem_mode) begin
-        if ((!W1 && !W2) || W1) begin
+        if (W1) begin
             preW1 = 1'b1;
         end
     end else if (fetch_exec_mode) begin
@@ -150,6 +150,7 @@ always_comb begin
     SHORT_d  = 1'b0;
     LONG_d   = 1'b0;
     SEL_d    = 4'b0000;
+    ST0_d    = 1'b0;
 
     SST0   = 1'b0;
 
