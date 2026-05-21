@@ -95,33 +95,34 @@ always_comb begin
             preW1 = 1'b1;
         end
     end else if (read_mem_mode || write_mem_mode) begin
-        if (W1) begin
-            preW1 = 1'b1;
+        if ((!W1 && !W2) || W1) begin
+            if (count != 2'b00) begin
+                preW1 = 1'b1;
+            end
         end
     end else if (fetch_exec_mode) begin
-        if (count == 2'b10) begin
+        if (count[1]) begin
             if (IR == `OP_LD || IR == `OP_ST) begin
                 if ((!W1 && !W2 && !W3) || W3) begin
                     preW1 = 1'b1;
                 end
-            end
-            else begin
+            end else begin
                 if ((!W1 && !W2 && !W3) || W2) begin
                     preW1 = 1'b1;
                 end
             end
-        end else if (count == 2'b00 || count == 2'b01) begin
+        end else if (!count[1]) begin
             preW1 = 1'b1;
         end
     end
 
-    if (write_reg_mode || read_reg_mode || (fetch_exec_mode && (count == 2'b10))) begin
+    if (write_reg_mode || read_reg_mode || (fetch_exec_mode && (count[1]))) begin
         if (W1) begin
             preW2 = 1'b1;
         end
     end
 
-    if (fetch_exec_mode && (count == 2'b10) && (IR == `OP_LD || IR == `OP_ST)) begin
+    if (fetch_exec_mode && (count[1]) && (IR == `OP_LD || IR == `OP_ST)) begin
         if (W2) begin
             preW3 = 1'b1;
         end
@@ -394,7 +395,7 @@ always_ff @(posedge T3 or negedge CLR) begin
 
         count  <= 2'b00;
     end else begin
-        if (count == 2'b00 || count == 2'b01) begin
+        if (!count[1]) begin
             count <= count + 2'b01;
         end
 

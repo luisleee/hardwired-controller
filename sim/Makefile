@@ -9,6 +9,7 @@ TB_GLOB := tb_*.sv
 SRCS    := $(sort $(wildcard $(RTL_DIR)/*.sv))
 INCS    := $(sort $(wildcard $(SIM_DIR)/*.svh))
 TBS     := $(sort $(wildcard $(TB_GLOB)))
+SIM_SRCS := $(sort $(filter-out $(addprefix $(SIM_DIR)/,$(TBS)), $(wildcard $(SIM_DIR)/*.sv)))
 
 TB ?= $(firstword $(TBS))
 TB_BASE := $(basename $(TB))
@@ -29,15 +30,15 @@ list:
 	@printf '%s\n' $(TBS)
 
 sim:
-	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $(BIN) $(TB) $(SRCS) $(INCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $(BIN) $(TB) $(SIM_SRCS) $(SRCS) $(INCS)
 	$(VVP) $(BIN)
 
 %.vcd: %.sv $(SRCS)
-	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $*.vvp $< $(SRCS) $(INCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $*.vvp $< $(SIM_SRCS) $(SRCS) $(INCS)
 	$(VVP) $*.vvp
 
 $(WAVE): $(TB) $(SRCS)
-	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $(BIN) $(TB) $(SRCS) $(INCS)
+	$(IVERILOG) -g2012 -Wall -I$(RTL_DIR) -I$(SIM_DIR) -o $(BIN) $(TB) $(SIM_SRCS) $(SRCS) $(INCS)
 	$(VVP) $(BIN)
 
 wave: $(WAVE)
