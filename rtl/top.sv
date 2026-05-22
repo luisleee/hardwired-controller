@@ -35,11 +35,6 @@ module top (
     output logic SHORT,
     output logic LONG,
     output logic [3:0] SEL,
-// dbg
-    output logic L1,
-    output logic L2,
-    output logic L3,
-    output logic LST0
 );
 
 logic [2:0] mode;
@@ -89,11 +84,6 @@ logic [1:0] count;
 logic preW1;
 logic preW2;
 logic preW3;
-
-assign L1 = preW1;
-assign L2 = preW2;
-assign L3 = preW3;
-assign LST0 = ST0;
 
 always_comb begin
     preW1 = 1'b0;
