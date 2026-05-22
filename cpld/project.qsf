@@ -77,3 +77,9 @@ set_location_assignment PIN_48 -to SEL[0]
 set_location_assignment PIN_49 -to SEL[1]
 set_location_assignment PIN_50 -to SEL[2]
 set_location_assignment PIN_51 -to SEL[3]
+
+set_location_assignment PIN_37 -to L1
+set_location_assignment PIN_39 -to L2
+set_location_assignment PIN_40 -to L3
+set_location_assignment PIN_51 -to LST0
+

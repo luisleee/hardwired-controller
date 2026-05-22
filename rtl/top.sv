@@ -34,7 +34,12 @@ module top (
     output logic MBUS,
     output logic SHORT,
     output logic LONG,
-    output logic [3:0] SEL
+    output logic [3:0] SEL,
+// dbg
+    output logic L1,
+    output logic L2,
+    output logic L3,
+    output logic LST0
 );
 
 logic [2:0] mode;
@@ -80,10 +85,15 @@ assign read_mem_mode   = (mode == `MODE_READ_MEM);
 assign write_mem_mode  = (mode == `MODE_WRITE_MEM);
 assign fetch_exec_mode = (mode == `MODE_FETCH_EXEC);
 
-logic [2:0] count;
+logic [1:0] count;
 logic preW1;
 logic preW2;
 logic preW3;
+
+assign L1 = preW1;
+assign L2 = preW2;
+assign L3 = preW3;
+assign LST0 = ST0;
 
 always_comb begin
     preW1 = 1'b0;
