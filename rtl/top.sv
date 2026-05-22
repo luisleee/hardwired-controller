@@ -100,7 +100,7 @@ always_comb begin
         end
     end else if (fetch_exec_mode) begin
         if (count[1]) begin
-            if (IR == `OP_LD || IR == `OP_ST) begin
+            if (opcode == `OP_LD || opcode == `OP_ST) begin
                 if ((!W1 && !W2 && !W3) || W3) begin
                     preW1 = 1'b1;
                 end
@@ -253,6 +253,33 @@ always_comb begin
                 end
             end
 
+            `OP_NOT: begin
+                if (preW2) begin
+                    S_d = 4'b0000;
+                    DRW_d = 1'b1;
+                    M_d = 1'b1;
+                    ABUS_d = 1'b1;
+                end
+            end
+
+            `OP_MOV: begin
+                if (preW2) begin
+                    S_d = 4'b1010;
+                    DRW_d = 1'b1;
+                    M_d = 1'b1;
+                    ABUS_d = 1'b1;
+                end
+            end
+
+            `OP_OR: begin
+                if (preW2) begin
+                    S_d = 4'b1110;
+                    DRW_d = 1'b1;
+                    M_d = 1'b1;
+                    ABUS_d = 1'b1;
+                end
+            end
+
             `OP_JMP: begin
                 if (preW2) begin
                     M_d = 1'b1;
@@ -265,6 +292,16 @@ always_comb begin
             `OP_STP: begin
                 if (preW2) begin
                     STOP_d = 1'b1;
+                end
+            end
+
+            `OP_CMP: begin
+                if (preW2) begin
+                    S_d    = 4'b0110;
+                    ABUS_d = 1'b1;
+                    LDC_d  = 1'b1;
+                    LDZ_d  = 1'b1;
+                    // NO DRW
                 end
             end
 
