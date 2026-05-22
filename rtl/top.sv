@@ -365,7 +365,7 @@ always_comb begin
     
 end
 
-always_ff @(posedge T3 or negedge CLR) begin
+always_ff @(negedge T3 or negedge CLR) begin
     if (!CLR) begin
         DRW    <= 1'b0;
         PCINC  <= 1'b0;
