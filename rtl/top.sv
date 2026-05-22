@@ -96,9 +96,7 @@ always_comb begin
         end
     end else if (read_mem_mode || write_mem_mode) begin
         if ((!W1 && !W2) || W1) begin
-            if (count != 2'b00) begin
-                preW1 = 1'b1;
-            end
+            preW1 = 1'b1;
         end
     end else if (fetch_exec_mode) begin
         if (count[1]) begin
