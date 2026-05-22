@@ -45,17 +45,36 @@ logic       write_mem_mode;
 logic       fetch_exec_mode;
 logic [3:0] opcode;
 
-// 只有状态机标志 ST0 需要跨越时钟周期记忆，其他全改为组合逻辑输出
+// D触发器输入端信号 (Next State Logic)
+logic       DRW_d;
+logic       PCINC_d;
+logic       LPC_d;
+logic       LAR_d;
+logic       PCADD_d;
+logic       ARINC_d;
+logic       SELCTL_d;
+logic       MEMW_d;
+logic       STOP_d;
+logic       LIR_d;
+logic       LDZ_d;
+logic       LDC_d;
+logic       CIN_d;
+logic [3:0] S_d;
+logic       M_d;
+logic       ABUS_d;
+logic       SBUS_d;
+logic       MBUS_d;
+logic       SHORT_d;
+logic       LONG_d;
+logic [3:0] SEL_d;
+
 logic ST0;
-logic ST0_d;
 logic SST0;
+logic ST0_d;
 
 assign mode = {SWC, SWB, SWA};
 assign opcode = IR[7:4];
 
-// 这里假设你的 macro.sv 中已经按照流程图定义好了宏：
-// `MODE_WRITE_REG = 3'b100, `MODE_READ_REG = 3'b011, `MODE_FETCH_EXEC = 3'b000
-// `MODE_READ_MEM = 3'b010,  `MODE_WRITE_MEM = 3'b001
 assign write_reg_mode  = (mode == `MODE_WRITE_REG);
 assign read_reg_mode   = (mode == `MODE_READ_REG);
 assign read_mem_mode   = (mode == `MODE_READ_MEM);
@@ -63,128 +82,133 @@ assign write_mem_mode  = (mode == `MODE_WRITE_MEM);
 assign fetch_exec_mode = (mode == `MODE_FETCH_EXEC);
 
 // ==========================================
-// 组合逻辑部分：根据当前模式和节拍(W1/W2/W3)立即输出控制信号
+// 核心修正区：节拍信号的边沿检测 (Edge Detection)
+// 无论外部按键按多久，内部只产生 1 个时钟周期的干净脉冲
+// ==========================================
+logic W1_delay, W2_delay, W3_delay;
+logic preW1, preW2, preW3;
+
+always_ff @(posedge T3 or negedge CLR) begin
+    if (!CLR) begin
+        W1_delay <= 1'b0;
+        W2_delay <= 1'b0;
+        W3_delay <= 1'b0;
+    end else begin
+        W1_delay <= W1;
+        W2_delay <= W2;
+        W3_delay <= W3;
+    end
+end
+
+// 只有在上升沿(0变1)的那个周期，preW 才是 1
+assign preW1 = W1 & ~W1_delay; 
+assign preW2 = W2 & ~W2_delay;
+assign preW3 = W3 & ~W3_delay;
+
+// ==========================================
+// 控制信号组合逻辑：计算下一状态 (_d 信号)
 // ==========================================
 always_comb begin
-    // 1. 默认所有控制信号为 0，防止生成锁存器 (Latch)
-    DRW    = 1'b0;
-    PCINC  = 1'b0;
-    LPC    = 1'b0;
-    LAR    = 1'b0;
-    PCADD  = 1'b0;
-    ARINC  = 1'b0;
-    SELCTL = 1'b0;
-    MEMW   = 1'b0;
-    STOP   = 1'b0;
-    LIR    = 1'b0;
-    LDZ    = 1'b0;
-    LDC    = 1'b0;
-    CIN    = 1'b0;
-    S      = 4'b0000;
-    M      = 1'b0;
-    ABUS   = 1'b0;
-    SBUS   = 1'b0;
-    MBUS   = 1'b0;
-    SHORT  = 1'b0;
-    LONG   = 1'b0;
-    SEL    = 4'b0000;
+    // 默认全0
+    DRW_d    = 1'b0; PCINC_d  = 1'b0; LPC_d    = 1'b0;
+    LAR_d    = 1'b0; PCADD_d  = 1'b0; ARINC_d  = 1'b0;
+    SELCTL_d = 1'b0; MEMW_d   = 1'b0; STOP_d   = 1'b0;
+    LIR_d    = 1'b0; LDZ_d    = 1'b0; LDC_d    = 1'b0;
+    CIN_d    = 1'b0; S_d      = 4'b0000; M_d   = 1'b0;
+    ABUS_d   = 1'b0; SBUS_d   = 1'b0; MBUS_d   = 1'b0;
+    SHORT_d  = 1'b0; LONG_d   = 1'b0; SEL_d    = 4'b0000;
+    
+    SST0     = 1'b0;
 
-    SST0   = 1'b0;
-    ST0_d  = ST0; // 默认保持当前 ST0 状态
-
-    // 2. 指令译码与执行控制
     if (fetch_exec_mode) begin
-        // 取指周期：W1
-        if (W1) begin
-            LIR   = 1'b1;
-            PCINC = 1'b1;
+        if (preW1) begin
+            LIR_d   = 1'b1;
+            PCINC_d = 1'b1;
         end
 
-        // 执行周期1：W2
-        if (W2) begin
+        if (preW2) begin
             case (opcode)
-                `OP_ADD: begin S = 4'b1001; CIN = 1'b1; ABUS = 1'b1; DRW = 1'b1; LDC = 1'b1; LDZ = 1'b1; end
-                `OP_SUB: begin S = 4'b0110; ABUS = 1'b1; DRW = 1'b1; LDC = 1'b1; LDZ = 1'b1; end
-                `OP_AND: begin M = 1'b1; S = 4'b1011; ABUS = 1'b1; DRW = 1'b1; end
-                `OP_INC: begin S = 4'b0000; ABUS = 1'b1; DRW = 1'b1; LDC = 1'b1; LDZ = 1'b1; end
-                
-                `OP_LD:  begin M = 1'b1; S = 4'b1010; ABUS = 1'b1; LAR = 1'b1; LONG = 1'b1; end
-                `OP_ST:  begin M = 1'b1; S = 4'b1111; ABUS = 1'b1; LAR = 1'b1; LONG = 1'b1; end
-                
-                `OP_JC:  begin if (C) PCADD = 1'b1; end
-                `OP_JZ:  begin if (Z) PCADD = 1'b1; end
-                `OP_JMP: begin M = 1'b1; S = 4'b1111; ABUS = 1'b1; LPC = 1'b1; end
-                `OP_STP: begin STOP = 1'b1; end
-                
-                `OP_OUT: begin S = 4'b1111; ABUS = 1'b1; M = 1'b1; end // 保留你的自定义指令
+                `OP_ADD: begin S_d = 4'b1001; CIN_d = 1'b1; ABUS_d = 1'b1; DRW_d = 1'b1; LDC_d = 1'b1; LDZ_d = 1'b1; end
+                `OP_SUB: begin S_d = 4'b0110; ABUS_d = 1'b1; DRW_d = 1'b1; LDC_d = 1'b1; LDZ_d = 1'b1; end
+                `OP_AND: begin M_d = 1'b1; S_d = 4'b1011; ABUS_d = 1'b1; DRW_d = 1'b1; end
+                `OP_INC: begin S_d = 4'b0000; ABUS_d = 1'b1; DRW_d = 1'b1; LDC_d = 1'b1; LDZ_d = 1'b1; end
+                `OP_LD:  begin M_d = 1'b1; S_d = 4'b1010; ABUS_d = 1'b1; LAR_d = 1'b1; LONG_d = 1'b1; end
+                `OP_ST:  begin M_d = 1'b1; S_d = 4'b1111; ABUS_d = 1'b1; LAR_d = 1'b1; LONG_d = 1'b1; end
+                `OP_JC:  begin if (C) PCADD_d = 1'b1; end
+                `OP_JZ:  begin if (Z) PCADD_d = 1'b1; end
+                `OP_OUT: begin S_d = 4'b1111; ABUS_d = 1'b1; M_d = 1'b1; end
+                `OP_JMP: begin M_d = 1'b1; S_d = 4'b1111; ABUS_d = 1'b1; LPC_d = 1'b1; end
+                `OP_STP: begin STOP_d = 1'b1; end
                 default: ;
             endcase
         end
 
-        // 执行周期2（访存）：W3
-        if (W3) begin
+        if (preW3) begin
             case (opcode)
-                `OP_LD: begin DRW = 1'b1; MBUS = 1'b1; end
-                `OP_ST: begin S = 4'b1010; M = 1'b1; ABUS = 1'b1; MEMW = 1'b1; end
+                `OP_LD: begin DRW_d = 1'b1; MBUS_d = 1'b1; end
+                `OP_ST: begin S_d = 4'b1010; M_d = 1'b1; ABUS_d = 1'b1; MEMW_d = 1'b1; end
                 default: ;
             endcase
         end
 
     end else if (write_mem_mode) begin
-        // 写存储器
-        if (W1) begin
+        if (preW1) begin // 因为有了边沿检测，按一次只触发一次！
             if (!ST0) begin
-                SBUS = 1'b1; LAR = 1'b1; STOP = 1'b1; SST0 = 1'b1; SHORT = 1'b1; SELCTL = 1'b1;
+                SBUS_d = 1'b1; LAR_d = 1'b1; STOP_d = 1'b1; SST0 = 1'b1; SHORT_d = 1'b1; SELCTL_d = 1'b1;
             end else begin
-                SBUS = 1'b1; MEMW = 1'b1; ARINC = 1'b1; STOP = 1'b1; SHORT = 1'b1; SELCTL = 1'b1;
+                SBUS_d = 1'b1; MEMW_d = 1'b1; ARINC_d = 1'b1; STOP_d = 1'b1; SHORT_d = 1'b1; SELCTL_d = 1'b1;
             end
         end
-
     end else if (read_mem_mode) begin
-        // 读存储器
-        if (W1) begin
+        if (preW1) begin
             if (!ST0) begin
-                SBUS = 1'b1; LAR = 1'b1; STOP = 1'b1; SST0 = 1'b1; SHORT = 1'b1; SELCTL = 1'b1;
+                SBUS_d = 1'b1; LAR_d = 1'b1; STOP_d = 1'b1; SST0 = 1'b1; SHORT_d = 1'b1; SELCTL_d = 1'b1;
             end else begin
-                MBUS = 1'b1; ARINC = 1'b1; STOP = 1'b1; SHORT = 1'b1; SELCTL = 1'b1;
+                MBUS_d = 1'b1; ARINC_d = 1'b1; STOP_d = 1'b1; SHORT_d = 1'b1; SELCTL_d = 1'b1;
             end
         end
-
     end else if (read_reg_mode) begin
-        // 读寄存器
-        if (W1) begin SEL = 4'b0001; SELCTL = 1'b1; STOP = 1'b1; end
-        if (W2) begin SEL = 4'b1011; SELCTL = 1'b1; STOP = 1'b1; end
-
+        if (preW1) begin SEL_d = 4'b0001; SELCTL_d = 1'b1; STOP_d = 1'b1; end
+        if (preW2) begin SEL_d = 4'b1011; SELCTL_d = 1'b1; STOP_d = 1'b1; end
     end else if (write_reg_mode) begin
-        // 写寄存器
         if (!ST0) begin
-            if (W1) begin SBUS = 1'b1; SEL = 4'b0011; SELCTL = 1'b1; DRW = 1'b1; STOP = 1'b1; end
-            if (W2) begin SBUS = 1'b1; SEL = 4'b0100; SELCTL = 1'b1; DRW = 1'b1; STOP = 1'b1; SST0 = 1'b1; end
+            if (preW1) begin SBUS_d = 1'b1; SEL_d = 4'b0011; SELCTL_d = 1'b1; DRW_d = 1'b1; STOP_d = 1'b1; end
+            if (preW2) begin SBUS_d = 1'b1; SEL_d = 4'b0100; SELCTL_d = 1'b1; DRW_d = 1'b1; STOP_d = 1'b1; SST0 = 1'b1; end
         end else begin
-            if (W1) begin SBUS = 1'b1; SEL = 4'b1001; SELCTL = 1'b1; DRW = 1'b1; STOP = 1'b1; end
-            if (W2) begin SBUS = 1'b1; SEL = 4'b1110; SELCTL = 1'b1; DRW = 1'b1; STOP = 1'b1; end
+            if (preW1) begin SBUS_d = 1'b1; SEL_d = 4'b1001; SELCTL_d = 1'b1; DRW_d = 1'b1; STOP_d = 1'b1; end
+            if (preW2) begin SBUS_d = 1'b1; SEL_d = 4'b1110; SELCTL_d = 1'b1; DRW_d = 1'b1; STOP_d = 1'b1; end
         end
     end
 
-    // ==========================================
     // ST0 状态机切换逻辑
-    // ==========================================
     if (SST0) begin
-        ST0_d = 1'b1; 
-    end else if (write_reg_mode && W2 && ST0) begin
-        ST0_d = 1'b0; // 写寄存器模式下，完成第二波写入后复位 ST0
-    end 
-    // 注：读写存储器时，一旦置1就保持1，这样你按执行键就能依靠 ARINC 一直连续写入下一地址。
-    // 如果要写新的地址，通过板子上的 CLR (Reset) 按钮让系统回 0。
+        ST0_d = 1'b1;
+    end else if (write_reg_mode && preW2 && ST0) begin
+        ST0_d = 1'b0;
+    end else begin
+        ST0_d = ST0;
+    end
 end
 
 // ==========================================
-// 时序逻辑部分：只负责维护 ST0 状态和响应复位
+// 时序逻辑：完美锁存，彻底告别毛刺！
 // ==========================================
 always_ff @(posedge T3 or negedge CLR) begin
     if (!CLR) begin
+        DRW <= 1'b0; PCINC <= 1'b0; LPC <= 1'b0; LAR <= 1'b0;
+        PCADD <= 1'b0; ARINC <= 1'b0; SELCTL <= 1'b0; MEMW <= 1'b0;
+        STOP <= 1'b0; LIR <= 1'b0; LDZ <= 1'b0; LDC <= 1'b0;
+        CIN <= 1'b0; S <= 4'b0000; M <= 1'b0; ABUS <= 1'b0;
+        SBUS <= 1'b0; MBUS <= 1'b0; SHORT <= 1'b0; LONG <= 1'b0;
+        SEL <= 4'b0000;
         ST0 <= 1'b0;
     end else begin
+        DRW <= DRW_d; PCINC <= PCINC_d; LPC <= LPC_d; LAR <= LAR_d;
+        PCADD <= PCADD_d; ARINC <= ARINC_d; SELCTL <= SELCTL_d; MEMW <= MEMW_d;
+        STOP <= STOP_d; LIR <= LIR_d; LDZ <= LDZ_d; LDC <= LDC_d;
+        CIN <= CIN_d; S <= S_d; M <= M_d; ABUS <= ABUS_d;
+        SBUS <= SBUS_d; MBUS <= MBUS_d; SHORT <= SHORT_d; LONG <= LONG_d;
+        SEL <= SEL_d;
         ST0 <= ST0_d;
     end
 end
