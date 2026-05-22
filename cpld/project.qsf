@@ -16,7 +16,6 @@ set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 # ---- Source files ---------------------------------------------------------
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/macro.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/top.sv
-set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/alu.sv
 
 # ---- Misc -----------------------------------------------------------------
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"

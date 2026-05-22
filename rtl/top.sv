@@ -34,7 +34,7 @@ module top (
     output logic MBUS,
     output logic SHORT,
     output logic LONG,
-    output logic [3:0] SEL,
+    output logic [3:0] SEL
 );
 
 logic [2:0] mode;
