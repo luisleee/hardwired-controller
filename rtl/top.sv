@@ -271,12 +271,12 @@ always_comb begin
                 end
             end
 
+            // IN Rd
             `OP_OR: begin
                 if (preW2) begin
-                    S_d = 4'b1110;
+                    SBUS_d = 1'b1;
                     DRW_d = 1'b1;
-                    M_d = 1'b1;
-                    ABUS_d = 1'b1;
+                    STOP_d = 1'b1;
                 end
             end
 
