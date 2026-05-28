@@ -14,7 +14,7 @@
 `define OP_OUT   4'b1010 // 输出
 `define OP_NOT   4'b1011 // 非
 `define OP_MOV   4'b1100 // 移动
-`define OP_OR    4'b1101 // 或
+`define OP_IN    4'b1101 // 输入，带暂停
 `define OP_STP   4'b1110 // 停止
 `define OP_CMP   4'b1111 // 比较
 

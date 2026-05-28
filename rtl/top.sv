@@ -80,7 +80,6 @@ assign read_mem_mode   = (mode == `MODE_READ_MEM);
 assign write_mem_mode  = (mode == `MODE_WRITE_MEM);
 assign fetch_exec_mode = (mode == `MODE_FETCH_EXEC);
 
-logic [1:0] count;
 logic preW1;
 logic preW2;
 logic preW3;
@@ -99,28 +98,24 @@ always_comb begin
             preW1 = 1'b1;
         end
     end else if (fetch_exec_mode) begin
-        if (count[1]) begin
-            if (opcode == `OP_LD || opcode == `OP_ST) begin
-                if ((!W1 && !W2 && !W3) || W3) begin
-                    preW1 = 1'b1;
-                end
-            end else begin
-                if ((!W1 && !W2 && !W3) || W2) begin
-                    preW1 = 1'b1;
-                end
+        if (opcode == `OP_LD || opcode == `OP_ST) begin
+            if ((!W1 && !W2 && !W3) || W3) begin
+                preW1 = 1'b1;
             end
-        end else if (!count[1]) begin
-            preW1 = 1'b1;
+        end else begin
+            if ((!W1 && !W2 && !W3) || W2) begin
+                preW1 = 1'b1;
+            end
         end
     end
 
-    if (write_reg_mode || read_reg_mode || (fetch_exec_mode && (count[1]))) begin
+    if (write_reg_mode || read_reg_mode || fetch_exec_mode) begin
         if (W1) begin
             preW2 = 1'b1;
         end
     end
 
-    if (fetch_exec_mode && (count[1]) && (IR == `OP_LD || IR == `OP_ST)) begin
+    if (fetch_exec_mode && (opcode == `OP_LD || opcode == `OP_ST)) begin
         if (W2) begin
             preW3 = 1'b1;
         end
@@ -271,8 +266,7 @@ always_comb begin
                 end
             end
 
-            // IN Rd
-            `OP_OR: begin
+            `OP_IN: begin
                 if (preW2) begin
                     SBUS_d = 1'b1;
                     DRW_d = 1'b1;
@@ -428,12 +422,7 @@ always_ff @(negedge T3 or negedge CLR) begin
 
         ST0    <= 1'b0;
 
-        count  <= 2'b00;
     end else begin
-        if (!count[1]) begin
-            count <= count + 2'b01;
-        end
-
         DRW    <= DRW_d;
         PCINC  <= PCINC_d;
         LPC    <= LPC_d;
