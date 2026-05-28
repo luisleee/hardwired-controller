@@ -1,3 +1,6 @@
+`ifndef ALU_MOCK_SVH
+`define ALU_MOCK_SVH
+
 `timescale 1ns/1ps
 
 module alu #(
@@ -141,3 +144,5 @@ assign C = c_int;
 assign Z = (f_int == '0);
 
 endmodule
+
+`endif

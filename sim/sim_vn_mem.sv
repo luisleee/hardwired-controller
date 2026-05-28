@@ -18,15 +18,29 @@ module sim_vn_mem #(
 localparam int DEPTH = 1 << ADDR_W;
 
 logic [DATA_W-1:0] mem [0:DEPTH-1];
+logic [DATA_W-1:0] ir_hold;
+logic [DATA_W-1:0] mbus_hold;
 
 initial begin
+    ir_hold = '0;
+    mbus_hold = '0;
     if (INIT_FILE != "") begin
         $readmemh(INIT_FILE, mem);
     end
 end
 
-assign ir = t2 ? mem[pc] : '0;
-assign mbus_data = (t2 && mbus && !memw) ? mem[ar] : '0;
+assign ir = ir_hold;
+assign mbus_data = mbus_hold;
+
+always_ff @(posedge t2) begin
+    ir_hold <= mem[pc];
+
+    if (mbus && !memw) begin
+        mbus_hold <= mem[ar];
+    end else begin
+        mbus_hold <= '0;
+    end
+end
 
 // 读写都约束在 T2 周期内；写在 T2 下降沿提交，便于先稳定 AR/SBUS/MEMW。
 always_ff @(negedge t2) begin

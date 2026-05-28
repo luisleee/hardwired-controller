@@ -245,7 +245,6 @@ always_comb begin
                     S_d = 4'b1010;
                     ABUS_d = 1'b1;
                     M_d = 1'b1;
-                    STOP_d = 1'b1;
                 end
             end
 
@@ -271,7 +270,6 @@ always_comb begin
                 if (preW2) begin
                     SBUS_d = 1'b1;
                     DRW_d = 1'b1;
-                    STOP_d = 1'b1;
                 end
             end
 
