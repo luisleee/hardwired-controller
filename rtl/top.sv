@@ -242,9 +242,10 @@ always_comb begin
 
             `OP_OUT: begin
                 if (preW2) begin
-                    S_d = 4'b1111;
+                    S_d = 4'b1010;
                     ABUS_d = 1'b1;
                     M_d = 1'b1;
+                    STOP_d = 1'b1;
                 end
             end
 
